@@ -1,0 +1,390 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String
+  name          String
+  role          String    @default("SUPER_ADMIN")
+  isActive      Boolean   @default(true)
+  lastLogin     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  auditLogs     AuditLog[]
+  generatedPayslips GeneratedPayslip[]
+}
+
+model Employee {
+  id                String    @id @default(uuid())
+  employeeCode      String    @unique
+  employeeName      String
+  email             String    @unique
+  phoneNumber       String
+  department        String
+  designation       String
+  panNumber         String
+  aadharNumber      String    @unique
+  uanNumber         String?
+  pfNumber          String?
+  esiNumber         String?
+  bankName          String
+  bankAccountNumber String
+  ifscCode          String
+  joiningDate       DateTime
+  employmentStatus  String    @default("Active")
+  
+  // Jibble Integration
+  jibbleEmployeeId  String?   @unique
+  jibbleUserId      String?   @unique
+  syncStatus        String?   @default("PENDING")
+  lastSyncTime      DateTime?
+  attendanceStatus  String?   @default("UNKNOWN")
+  
+  // Salary Components
+  basicSalary       Float     @default(0)
+  hra               Float     @default(0)
+  da                Float     @default(0)
+  medicalAllowance  Float     @default(0)
+  travelAllowance   Float     @default(0)
+  specialAllowance  Float     @default(0)
+  otherAllowances   Float     @default(0)
+  grossSalary       Float     @default(0)
+  netSalary         Float     @default(0)
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  attendance        Attendance[]
+  attendanceSummary AttendanceSummary[]
+  payslips          Payslip[]
+  generatedPayslips GeneratedPayslip[]
+  emailLogs         EmailLog[]
+  salaryHistory     SalaryHistory[]
+  parsedSalaryData  ParsedSalaryData[]
+}
+
+model Attendance {
+  id                String    @id @default(uuid())
+  employeeId        String
+  date              DateTime
+  clockInTime       DateTime?
+  clockOutTime      DateTime?
+  breakDuration     Float?    @default(0)
+  totalWorkedHours  Float?    @default(0)
+  overtimeHours     Float?    @default(0)
+  status            String    @default("PRESENT")
+  isHoliday         Boolean   @default(false)
+  isWeekend         Boolean   @default(false)
+  isLeave           Boolean   @default(false)
+  leaveType         String?
+  notes             String?
+  syncId            String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  employee          Employee  @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+}
+
+model AttendanceSummary {
+  id                  String    @id @default(uuid())
+  employeeId          String
+  month               Int
+  year                Int
+  totalDays           Int       @default(0)
+  workingDays         Int       @default(0)
+  presentDays         Int       @default(0)
+  absentDays          Int       @default(0)
+  leaveDays           Int       @default(0)
+  holidayDays         Int       @default(0)
+  weekendDays         Int       @default(0)
+  lopDays             Int       @default(0)
+  payableDays         Int       @default(0)
+  totalWorkedHours    Float     @default(0)
+  totalOvertimeHours  Float     @default(0)
+  lateDeductions      Float     @default(0)
+  attendanceDeductions Float   @default(0)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  
+  employee            Employee  @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  
+  @@unique([employeeId, month, year])
+}
+
+model Payslip {
+  id                String    @id @default(uuid())
+  employeeId        String
+  month             Int
+  year              Int
+  totalDays         Int       @default(0)
+  workingDays       Int       @default(0)
+  presentDays       Int       @default(0)
+  absentDays        Int       @default(0)
+  leaveDays         Int       @default(0)
+  holidayDays       Int       @default(0)
+  weekendDays       Int       @default(0)
+  lopDays           Int       @default(0)
+  payableDays       Int       @default(0)
+  
+  // Salary Components
+  basicSalary       Float     @default(0)
+  hra               Float     @default(0)
+  da                Float     @default(0)
+  medicalAllowance  Float     @default(0)
+  travelAllowance   Float     @default(0)
+  specialAllowance  Float     @default(0)
+  otherAllowances   Float     @default(0)
+  bonus             Float     @default(0)
+  incentive         Float     @default(0)
+  overtimePay       Float     @default(0)
+  totalEarnings     Float     @default(0)
+  
+  // Deductions
+  pfDeduction       Float     @default(0)
+  esiDeduction      Float     @default(0)
+  professionalTax   Float     @default(0)
+  incomeTax         Float     @default(0)
+  leaveDeduction    Float     @default(0)
+  lateDeduction     Float     @default(0)
+  otherDeductions   Float     @default(0)
+  advanceDeduction  Float     @default(0)
+  totalDeductions   Float     @default(0)
+  
+  grossSalary       Float     @default(0)
+  netSalary         Float     @default(0)
+  amountInWords     String?
+  
+  status            String    @default("DRAFT")
+  pdfPath           String?
+  pdfSize           Int?
+  
+  generatedAt       DateTime?
+  generatedBy       String?
+  sentAt            DateTime?
+  sentBy            String?
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  employee          Employee  @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  generatedPayslip  GeneratedPayslip?
+  emailLogs         EmailLog[]
+  
+  @@unique([employeeId, month, year])
+}
+
+model GeneratedPayslip {
+  id              String    @id @default(uuid())
+  payslipId       String    @unique
+  employeeId      String
+  month           Int
+  year            Int
+  pdfPath         String
+  pdfSize         Int
+  generatedAt     DateTime  @default(now())
+  generatedBy     String
+  downloadCount   Int       @default(0)
+  lastDownloadAt  DateTime?
+  
+  employee        Employee  @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  payslip         Payslip   @relation(fields: [payslipId], references: [id], onDelete: Restrict)
+  admin           Admin     @relation(fields: [generatedBy], references: [id])
+}
+
+model EmailLog {
+  id              String    @id @default(uuid())
+  employeeId      String
+  payslipId       String?
+  emailType       String    @default("PAYSLIP")
+  recipientEmail  String
+  subject         String
+  body            String?
+  attachmentPath  String?
+  status          String    @default("PENDING")
+  errorMessage    String?
+  sentAt          DateTime?
+  createdAt       DateTime  @default(now())
+  
+  employee        Employee  @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  payslip         Payslip?  @relation(fields: [payslipId], references: [id])
+}
+
+model UploadedFile {
+  id              String    @id @default(uuid())
+  fileName        String
+  filePath        String
+  fileSize        Int
+  fileType        String
+  recordCount     Int       @default(0)
+  status          String    @default("UPLOADED")
+  month           Int?
+  year            Int?
+  uploadedBy      String
+  uploadedAt      DateTime  @default(now())
+  
+  parsedData      ParsedSalaryData[]
+}
+
+model ParsedSalaryData {
+  id              String    @id @default(uuid())
+  uploadedFileId  String
+  employeeId      String?
+  employeeCode    String?
+  employeeName    String
+  month           Int
+  year            Int
+  basicSalary     Float     @default(0)
+  hra             Float     @default(0)
+  da              Float     @default(0)
+  bonus           Float     @default(0)
+  incentive       Float     @default(0)
+  leaveDeduction  Float     @default(0)
+  pfDeduction     Float     @default(0)
+  professionalTax Float     @default(0)
+  esiDeduction    Float     @default(0)
+  otherDeductions Float     @default(0)
+  workingDays     Int       @default(0)
+  leaves          Int       @default(0)
+  lop             Int       @default(0)
+  netSalary       Float     @default(0)
+  presentDays     Int       @default(0)
+  absentDays      Int       @default(0)
+  holidayDays     Int       @default(0)
+  monthlySalary   Float     @default(0)
+  attBonus        Float     @default(0)
+  gross           Float     @default(0)
+  status          String    @default("PENDING")
+  isValid         Boolean   @default(true)
+  validationErrors String?
+  createdAt       DateTime  @default(now())
+  
+  uploadedFile    UploadedFile @relation(fields: [uploadedFileId], references: [id], onDelete: Cascade)
+  employee        Employee? @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+}
+
+model CompanyProfile {
+  id              String    @id @default(uuid())
+  companyName     String    @default("ShineCraft")
+  address         String?
+  logo            String?
+  gstNumber       String?
+  panNumber       String?
+  phoneNumber     String?
+  email           String?
+  website         String?
+  authorizedSignatory String?
+  footerText      String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model SMTPConfig {
+  id              String    @id @default(uuid())
+  host            String    @default("smtp.gmail.com")
+  port            Int       @default(587)
+  username        String
+  password        String
+  senderName      String    @default("ShineCraft HR")
+  senderEmail     String
+  encryption      String    @default("TLS")
+  isDefault       Boolean   @default(true)
+  isActive        Boolean   @default(true)
+  lastTestAt      DateTime?
+  testStatus      String?
+  testMessage     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Setting {
+  id              String    @id @default(uuid())
+  key             String    @unique
+  value           String
+  category        String
+  description     String?
+  isEditable      Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model AuditLog {
+  id              String    @id @default(uuid())
+  adminId         String
+  action          String
+  entityType      String
+  entityId        String?
+  details         Json?
+  ipAddress       String?
+  userAgent       String?
+  timestamp       DateTime  @default(now())
+  
+  admin           Admin     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+}
+
+model Department {
+  id              String    @id @default(uuid())
+  name            String    @unique
+  code            String    @unique
+  description     String?
+  head            String?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  designations    Designation[]
+}
+
+model Designation {
+  id              String    @id @default(uuid())
+  name            String    @unique
+  code            String    @unique
+  departmentId    String
+  description     String?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  department      Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+}
+
+model SalaryHistory {
+  id              String    @id @default(uuid())
+  employeeId      String
+  month           Int
+  year            Int
+  basicSalary     Float     @default(0)
+  hra             Float     @default(0)
+  da              Float     @default(0)
+  medicalAllowance Float   @default(0)
+  travelAllowance Float   @default(0)
+  specialAllowance Float  @default(0)
+  otherAllowances Float   @default(0)
+  grossSalary     Float     @default(0)
+  netSalary       Float     @default(0)
+  createdAt       DateTime  @default(now())
+  
+  employee        Employee  @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+}
+
+model JibbleSyncHistory {
+  id              String    @id @default(uuid())
+  syncType        String
+  startDate       DateTime
+  endDate         DateTime
+  recordsSynced   Int       @default(0)
+  recordsFailed   Int       @default(0)
+  status          String    @default("RUNNING")
+  errorMessage    String?
+  syncStartAt     DateTime  @default(now())
+  syncEndAt       DateTime?
+  initiatedBy     String
+  createdAt       DateTime  @default(now())
+}
