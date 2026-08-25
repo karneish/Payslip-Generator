@@ -190,3 +190,9 @@ This project is licensed under the MIT License. See [LICENSE](./LICENSE) for det
 ---
 
 <p align="center">Built with ❤️ by the ShineCraft team</p>
+
+---
+
+## Author
+
+**KARNEISH S** | [GitHub](https://github.com/karneish) | [LinkedIn](https://www.linkedin.com/in/karneish-pm)
