@@ -1,0 +1,358 @@
+================================================================================
+              SHINECRAFT PAYSLIP GENERATOR - COMPLETE TEST TITLE LIST
+================================================================================
+Platform: ShineCraft Payslip Generator (Payslip, Attendance, HR & Reporting System)
+Purpose : Ensure the ENTIRE platform works without any error across all features.
+Pre-Req  : Backend running on http://localhost:5000 , Frontend on http://localhost:3000
+Default  : Admin login -> admin@shinecraft.com / Admin@123
+================================================================================
+
+--------------------------------------------------------------------------------
+TESTING TYPE 1 : MANUAL TESTING (SMOKE TESTING)
+--------------------------------------------------------------------------------
+Purpose: Quick check that all core modules load and run without any error.
+
+MT-01  Verify the application loads successfully in the browser without console errors
+MT-02  Verify the login page opens and displays correctly
+MT-03  Verify successful login with correct admin credentials
+MT-04  Verify the Dashboard page loads with all statistics cards without error
+MT-05  Verify the Employees page opens and lists employee records
+MT-06  Verify the Upload Salary page opens with file upload area
+MT-07  Verify the Payslips page opens and lists payslip records
+MT-08  Verify the Attendance page opens and shows attendance records
+MT-09  Verify the Sidebar navigation works between all main pages
+MT-10  Verify the Header shows logged-in admin name and role correctly
+MT-11  Verify the Logout button signs out and returns to login page
+MT-12  Verify all pages render without blank screens, crashes, or 500 errors
+
+--------------------------------------------------------------------------------
+TESTING TYPE 2 : MANUAL TESTING (FUNCTIONAL TESTING - AUTHENTICATION)
+--------------------------------------------------------------------------------
+FNT-01  Verify login with valid email and password succeeds
+FNT-02  Verify login with invalid email shows validation error message
+FNT-03  Verify login with invalid password shows error toast "Invalid credentials"
+FNT-04  Verify login with empty fields shows required-field validation errors
+FNT-05  Verify password field is masked and the show/hide eye toggle works
+FNT-06  Verify "Remember me" checkbox persists login across browser restarts
+FNT-07  Verify "Forgot password" link is present (or behaves as designed)
+FNT-08  Verify login button shows loading spinner while authenticating
+FNT-09  Verify unauthenticated users are redirected to login page
+FNT-10  Verify the "/auth/me" API returns the correct logged-in admin profile
+FNT-11  Verify change-password functionality updates the password correctly
+FNT-12  Verify logout clears the session token and blocks access to dashboard
+FNT-13  Verify login with wrong credentials does not allow access to dashboard
+FNT-14  Verify old/invalid token cannot access protected API endpoints (401)
+
+--------------------------------------------------------------------------------
+TESTING TYPE 3 : MANUAL TESTING (FUNCTIONAL TESTING - DASHBOARD)
+--------------------------------------------------------------------------------
+FNT-15  Verify all six stat cards display correct counts (Total, Active, Month payslips, Generated, Uploaded, Pending)
+FNT-16  Verify Total Employees count matches the Employees list count
+FNT-17  Verify Active Employees count matches only status = Active employees
+FNT-18  Verify Current Month Payslips count matches payslips for current month/year
+FNT-19  Verify Generated Payslips count matches GENERATED/APPROVED/PAID statuses
+FNT-20  Verify Uploaded Salary Files count matches upload history
+FNT-21  Verify Pending Payslips count matches DRAFT status payslips
+FNT-22  Verify Department Distribution pie chart renders with correct data
+FNT-23  Verify Salary Distribution line chart renders average/total net, gross, deductions
+FNT-24  Verify charts render correctly on hover tooltips
+FNT-25  Verify Dashboard data refreshes after adding/deleting employees or payslips
+FNT-26  Verify Dashboard handles empty database without errors (all zeros)
+FNT-27  Verify loading skeleton animation shows while data is being fetched
+FNT-28  Verify no console errors appear when the Dashboard loads
+
+--------------------------------------------------------------------------------
+TESTING TYPE 4 : MANUAL TESTING (FUNCTIONAL TESTING - EMPLOYEES)
+--------------------------------------------------------------------------------
+FNT-29  Verify Employees page lists all employees with correct columns
+FNT-30  Verify employee search/filter by name or ID works correctly
+FNT-31  Verify pagination works when many employees exist
+FNT-32  Verify "Add Employee" form opens with all required fields
+FNT-33  Verify creating an employee with valid data succeeds
+FNT-34  Verify creating an employee with missing required fields shows validation errors
+FNT-35  Verify creating an employee with duplicate Employee ID shows error
+FNT-36  Verify creating an employee with invalid email/PAN/Aadhaar/phone format shows errors
+FNT-37  Verify employee view/Edit form loads existing data correctly
+FNT-38  Verify updating employee details saves changes correctly
+FNT-39  Verify deleting an employee shows a confirmation dialog
+FNT-40  Verify deleting an employee removes them from the list
+FNT-41  Verify deleting an employee with payslip dependencies is blocked with a clear message
+FNT-42  Verify employee import from file works (CSV/Excel)
+FNT-43  Verify employee export (CSV/Excel) downloads a valid file with all records
+FNT-44  Verify salary history is added and displayed for an employee
+FNT-45  Verify employee status (Active/Inactive) toggles correctly
+FNT-46  Verify department and designation dropdowns populate from settings
+FNT-47  Verify employees page shows proper empty state when no records exist
+FNT-48  Verify employee details page shows complete profile (salary, bank, statutory fields)
+
+--------------------------------------------------------------------------------
+TESTING TYPE 5 : MANUAL TESTING (FUNCTIONAL TESTING - UPLOAD SALARY)
+--------------------------------------------------------------------------------
+FNT-49  Verify upload page accepts a standard CSV file with correct format
+FNT-50  Verify upload page accepts an Excel (.xlsx/.xls) file
+FNT-51  Verify upload page accepts the attendance-sheet format file
+FNT-52  Verify a valid file shows parsing success summary
+FNT-53  Verify uploading an invalid/empty file shows a clear error message
+FNT-54  Verify uploading a wrong-format file (e.g. .txt) is rejected
+FNT-55  Verify parsing handles the standard CSV columns (Name, ID, Basic, Gross, Net, LOP, Working Days)
+FNT-56  Verify parsing handles attendance-sheet per-employee blocks correctly
+FNT-57  Verify employee names are extracted correctly from the header line
+FNT-58  Verify all parsed employee records appear in the review list
+FNT-59  Verify salary calculations (basic, allowances, deductions, net) are correct
+FNT-60  Verify Save Parsed Data creates employee/payslip records correctly
+FNT-61  Verify cancel/save review does not duplicate existing records
+FNT-62  Verify upload history lists previously uploaded files
+FNT-63  Verify deleting an upload removes it from history
+FNT-64  Verify large upload file (hundreds of rows) is processed without timeout
+FNT-65  Verify upload with partial/incomplete data shows appropriate warnings
+FNT-66  Verify duplicate employee records from upload are not created twice
+FNT-67  Verify LOP days and working days are calculated into payslip correctly
+
+--------------------------------------------------------------------------------
+TESTING TYPE 6 : MANUAL TESTING (FUNCTIONAL TESTING - PAYSLIPS)
+--------------------------------------------------------------------------------
+FNT-68  Verify Payslips page lists all payslips with correct columns
+FNT-69  Verify payslip filter by month and year works correctly
+FNT-70  Verify payslip filter by employee and status works correctly
+FNT-71  Verify payslip search by employee name/ID works
+FNT-72  Verify manually creating a payslip with valid data succeeds
+FNT-73  Verify payslip form validates required fields (employee, month, year, salary)
+FNT-74  Verify generating a payslip (DRAFT -> GENERATED) updates status
+FNT-75  Verify payslip status transitions (DRAFT/GENERATED/APPROVED/PAID) work
+FNT-76  Verify payslip edit updates earnings and deductions correctly
+FNT-77  Verify payslip totals (basic + allowances - deductions = net) are accurate
+FNT-78  Verify PDF download of a payslip opens/downloads valid PDF with correct data
+FNT-79  Verify payslip PDF contains company name, employee details, and salary breakdown
+FNT-80  Verify payslip review screen shows all salary components clearly
+FNT-81  Verify bulk generation of payslips for a month works without error
+FNT-82  Verify sending payslip via email (SMTP) triggers send for valid email
+FNT-83  Verify deleting a payslip shows confirmation and removes record
+FNT-84  Verify payslip stats (total, generated, pending) are correct
+FNT-85  Verify empty payslip list shows proper empty-state message
+FNT-86  Verify payslip data for an employee with no records shows zero/no-data state
+
+--------------------------------------------------------------------------------
+TESTING TYPE 7 : MANUAL TESTING (FUNCTIONAL TESTING - ATTENDANCE)
+--------------------------------------------------------------------------------
+FNT-87  Verify Attendance page lists all attendance records correctly
+FNT-88  Verify adding attendance for an employee with valid data succeeds
+FNT-89  Verify attendance form validates employee, month, and day marks
+FNT-90  Verify attendance markers (P/H/PL/A) are accepted and stored correctly
+FNT-91  Verify editing an attendance record updates the days correctly
+FNT-92  Verify deleting an attendance record removes it from the list
+FNT-93  Verify attendance filters by month and employee work correctly
+FNT-94  Verify Monthly Summary view aggregates present/holiday/leave/absent correctly
+FNT-95  Verify LOP calculation from attendance data is accurate
+FNT-96  Verify Dashboard attendance view shows correct monthly data
+FNT-97  Verify sync from Jibble imports attendance data successfully
+FNT-98  Verify attendance data with duplicate month/employee is not duplicated
+FNT-99  Verify empty attendance shows proper empty state
+FNT-100 Verify attendance day count does not exceed days in the month
+
+--------------------------------------------------------------------------------
+TESTING TYPE 8 : MANUAL TESTING (FUNCTIONAL TESTING - SETTINGS & EMAIL)
+--------------------------------------------------------------------------------
+FNT-101 Verify Company Profile settings load with saved company details
+FNT-102 Verify updating company name, address, contact saves correctly
+FNT-103 Verify SMTP settings page loads current SMTP configuration
+FNT-104 Verify updating SMTP host/port/user/password saves correctly
+FNT-105 Verify "Test SMTP connection" returns success for valid SMTP settings
+FNT-106 Verify "Test SMTP connection" shows error for invalid SMTP settings
+FNT-107 Verify adding a department with valid data succeeds
+FNT-108 Verify adding a duplicate department shows error
+FNT-109 Verify editing a department name saves correctly
+FNT-110 Verify deleting a department (unused) succeeds
+FNT-111 Verify deleting a department assigned to employees is blocked
+FNT-112 Verify adding a designation with valid data succeeds
+FNT-113 Verify adding a duplicate designation shows error
+FNT-114 Verify editing a designation saves correctly
+FNT-115 Verify deleting a designation (unused) succeeds
+FNT-116 Verify Email logs page lists all sent email records
+FNT-117 Verify mailto link generation for a payslip opens email client correctly
+
+--------------------------------------------------------------------------------
+TESTING TYPE 9 : MANUAL TESTING (FUNCTIONAL TESTING - JIBBLE INTEGRATION)
+--------------------------------------------------------------------------------
+FNT-118 Verify Jibble OAuth2 authorization flow starts correctly
+FNT-119 Verify Jibble connection status is displayed in settings
+FNT-120 Verify attendance sync from Jibble imports time tracking data
+FNT-121 Verify sync handles Jibble API failure gracefully with error message
+FNT-122 Verify Jibble data is mapped correctly to attendance records
+
+--------------------------------------------------------------------------------
+TESTING TYPE 10 : MANUAL TESTING (FUNCTIONAL TESTING - AUDIT & SECURITY)
+--------------------------------------------------------------------------------
+FNT-123 Verify Audit logs page lists all system actions with timestamp
+FNT-124 Verify audit log captures login, logout, and change-password actions
+FNT-125 Verify audit log captures employee and payslip create/update/delete actions
+FNT-126 Verify audit log captures file upload and save actions
+FNT-127 Verify audit stats show correct totals
+FNT-128 Verify password is never displayed in plain text anywhere in the UI
+FNT-129 Verify API requests without valid token return 401 Unauthorized
+FNT-130 Verify accessing another user's data returns 403/404 error
+FNT-131 Verify rate limiting blocks excessive login attempts
+
+--------------------------------------------------------------------------------
+TESTING TYPE 11 : MANUAL TESTING (UI / UX & NAVIGATION TESTING)
+--------------------------------------------------------------------------------
+UIF-01  Verify all pages are responsive on desktop (1920x1080) without overflow
+UIF-02  Verify all pages are responsive on tablet (768px) without breakage
+UIF-03  Verify all pages are responsive on mobile (375px) without breakage
+UIF-04  Verify sidebar collapse/expand toggle works and persists
+UIF-05  Verify active page is highlighted in the sidebar
+UIF-06  Verify header search box accepts text without error
+UIF-07  Verify notification bell icon displays correctly
+UIF-08  Verify all buttons, dropdowns, and modals respond to clicks correctly
+UIF-09  Verify tooltips, toasts, and success messages display correctly
+UIF-10  Verify form validation errors show inline in red text
+UIF-11  Verify loading spinners/skeletons show during API calls
+UIF-12  Verify navigation back/forward browser buttons work correctly
+UIF-13  Verify direct URL access to /dashboard, /employees, /payslips works when logged in
+UIF-14  Verify invalid URL shows proper 404 page (no crash)
+UIF-15  Verify page refresh keeps the user logged in (if Remember me checked)
+UIF-16  Verify overall color theme, fonts, and layout look consistent across pages
+
+--------------------------------------------------------------------------------
+TESTING TYPE 12 : ALPHA TESTING (INTERNAL BUILD - COMPLETE END-TO-END FLOWS)
+--------------------------------------------------------------------------------
+Purpose: Internal team validates complete workflows on a staging build before release.
+
+ALP-01  Verify full registration-to-login-to-dashboard flow works from scratch
+ALP-02  Verify complete flow: Login -> Upload CSV -> Save records -> Employees auto-created
+ALP-03  Verify complete flow: Upload file -> Review parsed data -> Generate payslips -> Download PDF
+ALP-04  Verify complete flow: Create employee -> Add attendance -> Generate payslip -> Send email
+ALP-05  Verify complete flow: Configure company profile -> Set SMTP -> Test SMTP -> Send payslip email
+ALP-06  Verify complete flow: Delete an employee -> Verify dashboard counts update
+ALP-07  Verify complete flow: Add department/designation -> Assign to employee -> Edit employee
+ALP-08  Verify complete flow: Generate payslips for multiple months -> Verify filters by month
+ALP-09  Verify complete flow: Import employees -> Export employees -> Compare data matches
+ALP-10  Verify complete flow: Jibble sync -> Verify attendance -> Generate payslips with LOP
+ALP-11  Verify all API endpoints return correct status codes (200/201/400/401/404)
+ALP-12  Verify data persists correctly after page refresh and after server restart
+ALP-13  Verify no critical or major bugs exist in any core module (Severity 1/2 = 0)
+ALP-14  Verify all console/network errors are absent across the whole app walk-through
+
+--------------------------------------------------------------------------------
+TESTING TYPE 13 : BETA TESTING (REAL-USER / CLIENT TRIAL)
+--------------------------------------------------------------------------------
+Purpose: A select group of real users (e.g. HR staff) uses the live build and reports issues.
+
+BET-01  Verify a real HR user can log in with assigned credentials
+BET-02  Verify a real HR user can upload a real monthly salary sheet without error
+BET-03  Verify a real HR user can review and save parsed employee data
+BET-04  Verify a real HR user can generate and download all payslips for a month
+BET-05  Verify a real HR user can email payslips to a real employee inbox
+BET-06  Verify a real HR user can view and correct attendance data
+BET-07  Verify a real HR user can update company profile and settings
+BET-08  Verify a real HR user can view audit logs and verify their own actions
+BET-09  Verify the system handles a full month of real data (all employees) without error
+BET-10  Verify the system performs acceptably during real daily usage
+BET-11  Verify all user-reported issues from beta are reproducible and logged
+BET-12  Verify no data loss or corruption occurs during real-world usage
+BET-13  Verify user documentation matches actual system behavior
+
+--------------------------------------------------------------------------------
+TESTING TYPE 14 : REGRESSION TESTING (AFTER ANY FIX / UPDATE)
+--------------------------------------------------------------------------------
+Purpose: Re-test existing features to ensure new changes do not break anything.
+
+RGT-01  Re-verify login, logout, and session expiry still work after changes
+RGT-02  Re-verify employee create, edit, delete, and search still work
+RGT-03  Re-verify CSV/Excel upload and parse still work
+RGT-04  Re-verify attendance-sheet format parsing still works
+RGT-05  Re-verify payslip generate, edit, PDF download still work
+RGT-06  Re-verify payslip email sending still works
+RGT-07  Re-verify attendance create/edit/delete and monthly summary still work
+RGT-08  Re-verify settings (company, SMTP, departments, designations) still work
+RGT-09  Re-verify dashboard statistics and charts still calculate correctly
+RGT-10  Re-verify audit logs and email logs still record correctly
+RGT-11  Re-verify all API endpoints from the API test report still pass
+RGT-12  Re-verify full smoke test suite passes with zero errors
+
+--------------------------------------------------------------------------------
+TESTING TYPE 15 : USER ACCEPTANCE TESTING (UAT)
+--------------------------------------------------------------------------------
+Purpose: Client/stakeholder confirms the system meets business requirements.
+
+UAT-01  Verify system matches the requirement of bulk salary upload from CSV/Excel
+UAT-02  Verify system matches the requirement of automatic employee creation
+UAT-03  Verify system matches the requirement of payslip PDF generation and export
+UAT-04  Verify system matches the requirement of email payslip dispatch
+UAT-05  Verify system matches the requirement of attendance tracking and LOP calculation
+UAT-06  Verify system matches the requirement of dashboards and reporting
+UAT-07  Verify system matches the requirement of company and admin settings management
+UAT-08  Verify system matches the requirement of audit trail for all actions
+UAT-09  Verify system is easy to use for non-technical HR staff
+UAT-10  Verify system handles peak month-end usage without failure
+UAT-11  Obtain client sign-off / acceptance on all core modules
+
+--------------------------------------------------------------------------------
+TESTING TYPE 16 : SECURITY TESTING
+--------------------------------------------------------------------------------
+SCT-01  Verify passwords are stored hashed (never plain text)
+SCT-02  Verify JWT token is required for all protected API endpoints
+SCT-03  Verify invalid/expired token returns 401 Unauthorized
+SCT-04  Verify brute-force login attempts are rate-limited/locked
+SCT-05  Verify SQL injection attempts in search fields do not break the system
+SCT-06  Verify XSS script input in name/description fields is not executed
+SCT-07  Verify uploaded files are validated by type and size (no malicious files)
+SCT-08  Verify sensitive data (PAN, Aadhaar, bank) is not exposed unnecessarily
+SCT-09  Verify CORS only allows configured frontend origin
+SCT-10  Verify error messages do not leak database or stack details to the user
+SCT-11  Verify logout invalidates the session token server-side
+SCT-12  Verify audit log records security events (login failures, access denials)
+
+--------------------------------------------------------------------------------
+TESTING TYPE 17 : PERFORMANCE / LOAD TESTING
+--------------------------------------------------------------------------------
+PRF-01  Verify login response time is under 2 seconds
+PRF-02  Verify dashboard load time is under 3 seconds
+PRF-03  Verify employee list with 1000+ records loads without timeout
+PRF-04  Verify payslip list with 1000+ records loads without timeout
+PRF-05  Verify uploading a file with 500+ employee rows completes under 30 seconds
+PRF-06  Verify bulk payslip generation completes without server crash
+PRF-07  Verify PDF download completes under 5 seconds
+PRF-08  Verify page transitions are smooth without noticeable lag
+PRF-09  Verify system handles 20+ concurrent users without errors
+PRF-10  Verify database queries do not slow down with growing data
+
+--------------------------------------------------------------------------------
+TESTING TYPE 18 : INTEGRATION TESTING
+--------------------------------------------------------------------------------
+INT-01  Verify frontend-backend API integration works on all modules
+INT-02  Verify database (PostgreSQL) stores and retrieves all entities correctly
+INT-03  Verify Prisma migrations apply cleanly on a fresh database
+INT-04  Verify upload -> parse -> save -> payslip generation pipeline works end-to-end
+INT-05  Verify SMTP email integration delivers real emails
+INT-06  Verify Jibble API integration syncs attendance correctly
+INT-07  Verify auth token works across all protected API routes
+INT-08  Verify employee -> payslip -> email flow works with real data
+INT-09  Verify settings updates reflect immediately in UI and payslip PDF
+INT-10  Verify seed data loads correctly and matches default credentials
+
+--------------------------------------------------------------------------------
+TESTING TYPE 19 : SYSTEM TESTING (FULL END-TO-END BUILD VERIFICATION)
+--------------------------------------------------------------------------------
+SYT-01  Verify clean installation per INSTALLATION.md succeeds (backend + frontend)
+SYT-02  Verify database migration and seed run without errors
+SYT-03  Verify the complete system works as a single unit on a production-like build
+SYT-04  Verify all 5 main modules (Dashboard, Employees, Upload, Payslips, Attendance) work together
+SYT-05  Verify settings module works with all other modules
+SYT-06  Verify system survives server restart without data loss
+SYT-07  Verify system runs on the documented ports (backend 5000, frontend 3000)
+SYT-08  Verify no unhandled exceptions occur during a full system walk-through
+SYT-09  Verify all API routes listed in API.md respond as documented
+SYT-10  Verify the user guide matches actual system behavior
+SYT-11  Verify the system is ready for production deployment sign-off
+
+--------------------------------------------------------------------------------
+SUMMARY OF COVERAGE
+--------------------------------------------------------------------------------
+Testing Types Covered : Manual (Functional/UI), Alpha, Beta, Regression, UAT,
+                        Security, Performance/Load, Integration, System
+Core Modules Covered  : Authentication, Dashboard, Employees, Upload Salary,
+                        Payslips, Attendance, Settings, Email/SMTP, Audit Logs,
+                        Jibble Integration
+Total Test Cases      : 100+ test titles covering the full platform
+Result Standards      : All tests should PASS with ZERO critical/major errors
+================================================================================
