@@ -1,0 +1,732 @@
+================================================================================
+                  SHINECRAFT PAYSLIP - PgAdmin4 DATABASE QUERIES
+================================================================================
+Database : ShineCraft Payslip (PostgreSQL)
+How to use: Open pgAdmin4 -> your ShineCraft database -> Query Tool (top-left
+             lightning icon) -> paste any query below -> Run (F5)
+
+NOTE ON TABLE NAMES:
+  The tables are created by Prisma with exact model names (no @@map used).
+  Because of this, table and column names preserve case (e.g. "Employee").
+  In pgAdmin4, always write them with double quotes as shown below.
+
+LIST OF TABLES:
+  "Admin", "Employee", "Attendance", "AttendanceSummary", "Payslip",
+  "GeneratedPayslip", "EmailLog", "UploadedFile", "ParsedSalaryData",
+  "CompanyProfile", "SMTPConfig", "Setting", "AuditLog", "Department",
+  "Designation", "SalaryHistory", "JibbleSyncHistory"
+================================================================================
+
+--------------------------------------------------------------------------------
+SECTION 1 : GENERAL / EXPLORATION QUERIES
+--------------------------------------------------------------------------------
+
+-- 1.1 Show all tables in the database
+SELECT table_name
+FROM information_schema.tables
+WHERE table_schema = 'public'
+ORDER BY table_name;
+
+-- 1.2 Show column details of any table (change table name as needed)
+SELECT column_name, data_type, is_nullable
+FROM information_schema.columns
+WHERE table_name = 'Employee'
+ORDER BY ordinal_position;
+
+-- 1.3 Row count of every table in one shot
+SELECT 'Admin' AS table_name, COUNT(*) AS row_count FROM "Admin"
+UNION ALL SELECT 'Employee', COUNT(*) FROM "Employee"
+UNION ALL SELECT 'Attendance', COUNT(*) FROM "Attendance"
+UNION ALL SELECT 'AttendanceSummary', COUNT(*) FROM "AttendanceSummary"
+UNION ALL SELECT 'Payslip', COUNT(*) FROM "Payslip"
+UNION ALL SELECT 'GeneratedPayslip', COUNT(*) FROM "GeneratedPayslip"
+UNION ALL SELECT 'EmailLog', COUNT(*) FROM "EmailLog"
+UNION ALL SELECT 'UploadedFile', COUNT(*) FROM "UploadedFile"
+UNION ALL SELECT 'ParsedSalaryData', COUNT(*) FROM "ParsedSalaryData"
+UNION ALL SELECT 'CompanyProfile', COUNT(*) FROM "CompanyProfile"
+UNION ALL SELECT 'SMTPConfig', COUNT(*) FROM "SMTPConfig"
+UNION ALL SELECT 'Setting', COUNT(*) FROM "Setting"
+UNION ALL SELECT 'AuditLog', COUNT(*) FROM "AuditLog"
+UNION ALL SELECT 'Department', COUNT(*) FROM "Department"
+UNION ALL SELECT 'Designation', COUNT(*) FROM "Designation"
+UNION ALL SELECT 'SalaryHistory', COUNT(*) FROM "SalaryHistory"
+UNION ALL SELECT 'JibbleSyncHistory', COUNT(*) FROM "JibbleSyncHistory"
+ORDER BY table_name;
+
+-- 1.4 Database current size
+SELECT pg_database_size(current_database()) AS database_size_bytes;
+
+-- 1.5 Which tables are actually present (matches installed schema)
+SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename;
+
+--------------------------------------------------------------------------------
+SECTION 2 : ADMIN USERS
+--------------------------------------------------------------------------------
+
+-- 2.1 List all admin users (do NOT print passwords - hashed only)
+SELECT id, email, name, role, "isActive", "lastLogin", "createdAt"
+FROM "Admin"
+ORDER BY "createdAt";
+
+-- 2.2 Find a specific admin by email
+SELECT id, email, name, role, "isActive", "lastLogin"
+FROM "Admin"
+WHERE email = 'admin@shinecraft.com';
+
+-- 2.3 Active admins only
+SELECT id, email, name, role
+FROM "Admin"
+WHERE "isActive" = true;
+
+-- 2.4 Admins who never logged in
+SELECT id, email, name, "createdAt"
+FROM "Admin"
+WHERE "lastLogin" IS NULL;
+
+--------------------------------------------------------------------------------
+SECTION 3 : EMPLOYEES
+--------------------------------------------------------------------------------
+
+-- 3.1 All employees (main details)
+SELECT id, "employeeCode", "employeeName", email, "phoneNumber",
+       department, designation, "panNumber", "aadharNumber",
+       "joiningDate", "employmentStatus", category
+FROM "Employee"
+ORDER BY "employeeName";
+
+-- 3.2 Employee with salary components
+SELECT id, "employeeCode", "employeeName", department, designation,
+       "basicSalary", hra, da, "medicalAllowance", "travelAllowance",
+       "specialAllowance", "otherAllowances", "grossSalary", "netSalary",
+       "employmentStatus"
+FROM "Employee"
+ORDER BY "employeeName";
+
+-- 3.3 Search employee by name or code
+SELECT "employeeCode", "employeeName", email, department, designation,
+       "employmentStatus"
+FROM "Employee"
+WHERE "employeeName" ILIKE '%Alpha%'
+   OR "employeeCode" ILIKE '%EMP%'
+ORDER BY "employeeName";
+
+-- 3.4 Employees by department
+SELECT department, COUNT(*) AS employee_count
+FROM "Employee"
+GROUP BY department
+ORDER BY employee_count DESC;
+
+-- 3.5 Active vs Inactive employees
+SELECT "employmentStatus", COUNT(*) AS total
+FROM "Employee"
+GROUP BY "employmentStatus";
+
+-- 3.6 Employees with their bank details
+SELECT "employeeCode", "employeeName", "bankName", "bankAccountNumber", "ifscCode"
+FROM "Employee"
+ORDER BY "employeeName";
+
+-- 3.7 Highest paid employees (by net salary)
+SELECT "employeeCode", "employeeName", department, "netSalary"
+FROM "Employee"
+ORDER BY "netSalary" DESC
+LIMIT 20;
+
+-- 3.8 Employees with Jibble integration details
+SELECT "employeeCode", "employeeName", "jibbleEmployeeId", "jibbleUserId",
+       "syncStatus", "lastSyncTime", "attendanceStatus"
+FROM "Employee"
+ORDER BY "employeeName";
+
+-- 3.9 Newly joined employees (this year)
+SELECT "employeeCode", "employeeName", department, "joiningDate"
+FROM "Employee"
+WHERE EXTRACT(YEAR FROM "joiningDate") = EXTRACT(YEAR FROM CURRENT_DATE)
+ORDER BY "joiningDate";
+
+-- 3.10 Department-wise salary totals
+SELECT department,
+       COUNT(*) AS employees,
+       SUM("grossSalary") AS total_gross,
+       SUM("netSalary")   AS total_net
+FROM "Employee"
+GROUP BY department
+ORDER BY total_net DESC;
+
+--------------------------------------------------------------------------------
+SECTION 4 : ATTENDANCE
+--------------------------------------------------------------------------------
+
+-- 4.1 All attendance records
+SELECT a.id, e."employeeCode", e."employeeName", a.date, a.status,
+       a."clockInTime", a."clockOutTime", a."totalWorkedHours",
+       a."overtimeHours", a."isHoliday", a."isWeekend", a."isLeave",
+       a."leaveType", a.notes
+FROM "Attendance" a
+JOIN "Employee" e ON e.id = a."employeeId"
+ORDER BY a.date DESC, e."employeeName";
+
+-- 4.2 Attendance for a specific date
+SELECT e."employeeCode", e."employeeName", a.status,
+       a."totalWorkedHours", a."overtimeHours"
+FROM "Attendance" a
+JOIN "Employee" e ON e.id = a."employeeId"
+WHERE a.date = '2026-07-15'::date
+ORDER BY e."employeeName";
+
+-- 4.3 Attendance for a specific month/year
+SELECT e."employeeCode", e."employeeName",
+       COUNT(*) FILTER (WHERE a.status = 'PRESENT') AS present,
+       COUNT(*) FILTER (WHERE a.status = 'ABSENT')  AS absent,
+       COUNT(*) FILTER (WHERE a.status = 'LEAVE')   AS on_leave,
+       COUNT(*) FILTER (WHERE a.status = 'HOLIDAY') AS holidays
+FROM "Attendance" a
+JOIN "Employee" e ON e.id = a."employeeId"
+WHERE EXTRACT(MONTH FROM a.date) = 7 AND EXTRACT(YEAR FROM a.date) = 2026
+GROUP BY e."employeeCode", e."employeeName"
+ORDER BY e."employeeName";
+
+-- 4.4 Status-wise attendance count for a month
+SELECT status, COUNT(*) AS total
+FROM "Attendance"
+WHERE EXTRACT(MONTH FROM date) = 7 AND EXTRACT(YEAR FROM date) = 2026
+GROUP BY status;
+
+-- 4.5 Employees with most absents in a month
+SELECT e."employeeCode", e."employeeName",
+       COUNT(*) FILTER (WHERE a.status = 'ABSENT') AS absent_days
+FROM "Attendance" a
+JOIN "Employee" e ON e.id = a."employeeId"
+WHERE EXTRACT(MONTH FROM a.date) = 7 AND EXTRACT(YEAR FROM a.date) = 2026
+GROUP BY e."employeeCode", e."employeeName"
+HAVING COUNT(*) FILTER (WHERE a.status = 'ABSENT') > 0
+ORDER BY absent_days DESC;
+
+-- 4.6 Employees with overtime in a month
+SELECT e."employeeCode", e."employeeName", a.date,
+       a."overtimeHours", a."totalWorkedHours"
+FROM "Attendance" a
+JOIN "Employee" e ON e.id = a."employeeId"
+WHERE EXTRACT(MONTH FROM a.date) = 7 AND EXTRACT(YEAR FROM a.date) = 2026
+  AND a."overtimeHours" > 0
+ORDER BY a."overtimeHours" DESC;
+
+-- 4.7 Attendance for one employee (all history)
+SELECT date, status, "clockInTime", "clockOutTime", "totalWorkedHours",
+       "overtimeHours", notes
+FROM "Attendance"
+WHERE "employeeId" = 'PASTE_EMPLOYEE_UUID_HERE'
+ORDER BY date DESC;
+
+--------------------------------------------------------------------------------
+SECTION 5 : ATTENDANCE SUMMARY (MONTHLY)
+--------------------------------------------------------------------------------
+
+-- 5.1 Monthly attendance summary for all employees
+SELECT e."employeeCode", e."employeeName", s.month, s.year,
+       s."totalDays", s."workingDays", s."presentDays", s."absentDays",
+       s."leaveDays", s."holidayDays", s."weekendDays", s."lopDays",
+       s."payableDays", s."totalWorkedHours", s."totalOvertimeHours"
+FROM "AttendanceSummary" s
+JOIN "Employee" e ON e.id = s."employeeId"
+ORDER BY s.year DESC, s.month DESC, e."employeeName";
+
+-- 5.2 Monthly summary for one specific month
+SELECT e."employeeCode", e."employeeName", s."presentDays", s."absentDays",
+       s."leaveDays", s."lopDays", s."payableDays"
+FROM "AttendanceSummary" s
+JOIN "Employee" e ON e.id = s."employeeId"
+WHERE s.month = 7 AND s.year = 2026
+ORDER BY e."employeeName";
+
+-- 5.3 Employees with LOP days in a month
+SELECT e."employeeCode", e."employeeName", s."lopDays", s."absentDays"
+FROM "AttendanceSummary" s
+JOIN "Employee" e ON e.id = s."employeeId"
+WHERE s.month = 7 AND s.year = 2026 AND s."lopDays" > 0
+ORDER BY s."lopDays" DESC;
+
+-- 5.4 Summary for one employee across months
+SELECT s.month, s.year, s."presentDays", s."absentDays", s."leaveDays",
+       s."lopDays", s."payableDays"
+FROM "AttendanceSummary" s
+WHERE s."employeeId" = 'PASTE_EMPLOYEE_UUID_HERE'
+ORDER BY s.year, s.month;
+
+--------------------------------------------------------------------------------
+SECTION 6 : PAYSLIPS
+--------------------------------------------------------------------------------
+
+-- 6.1 All payslips with employee details
+SELECT p.id, e."employeeCode", e."employeeName", p.month, p.year,
+       p.status, p."grossSalary", p."netSalary", p."generatedAt",
+       p."sentAt", p."createdAt"
+FROM "Payslip" p
+JOIN "Employee" e ON e.id = p."employeeId"
+ORDER BY p.year DESC, p.month DESC, e."employeeName";
+
+-- 6.2 Payslips for a specific month/year
+SELECT e."employeeCode", e."employeeName", p."basicSalary", p."totalEarnings",
+       p."totalDeductions", p."grossSalary", p."netSalary", p.status
+FROM "Payslip" p
+JOIN "Employee" e ON e.id = p."employeeId"
+WHERE p.month = 7 AND p.year = 2026
+ORDER BY e."employeeName";
+
+-- 6.3 Payslips by status
+SELECT p.status, COUNT(*) AS total
+FROM "Payslip" p
+GROUP BY p.status;
+
+-- 6.4 Payslips filtered by status (e.g. GENERATED)
+SELECT e."employeeCode", e."employeeName", p.month, p.year, p.status
+FROM "Payslip" p
+JOIN "Employee" e ON e.id = p."employeeId"
+WHERE p.status = 'GENERATED'
+ORDER BY p.year DESC, p.month DESC;
+
+-- 6.5 Full salary breakdown of one payslip
+SELECT p.month, p.year,
+       p."basicSalary", p.hra, p.da, p."medicalAllowance",
+       p."travelAllowance", p."specialAllowance", p."otherAllowances",
+       p.bonus, p.incentive, p."overtimePay", p."totalEarnings",
+       p."pfDeduction", p."esiDeduction", p."professionalTax", p."incomeTax",
+       p."leaveDeduction", p."lateDeduction", p."otherDeductions",
+       p."advanceDeduction", p."totalDeductions",
+       p."grossSalary", p."netSalary", p."amountInWords"
+FROM "Payslip" p
+WHERE p.id = 'PASTE_PAYSLIP_UUID_HERE';
+
+-- 6.6 Payslip attendance summary
+SELECT e."employeeCode", e."employeeName", p.month, p.year,
+       p."totalDays", p."workingDays", p."presentDays", p."absentDays",
+       p."leaveDays", p."holidayDays", p."weekendDays", p."lopDays",
+       p."payableDays"
+FROM "Payslip" p
+JOIN "Employee" e ON e.id = p."employeeId"
+ORDER BY p.year DESC, p.month DESC;
+
+-- 6.7 Highest and lowest net salary payslips
+(SELECT e."employeeName", p.month, p.year, p."netSalary", 'HIGHEST' AS rank
+ FROM "Payslip" p JOIN "Employee" e ON e.id = p."employeeId"
+ ORDER BY p."netSalary" DESC LIMIT 1)
+UNION ALL
+(SELECT e."employeeName", p.month, p.year, p."netSalary", 'LOWEST' AS rank
+ FROM "Payslip" p JOIN "Employee" e ON e.id = p."employeeId"
+ ORDER BY p."netSalary" ASC LIMIT 1);
+
+-- 6.8 Total payroll per month
+SELECT p.month, p.year,
+       COUNT(*) AS payslips,
+       SUM(p."grossSalary") AS total_gross,
+       SUM(p."netSalary")   AS total_net,
+       SUM(p."totalDeductions") AS total_deductions
+FROM "Payslip" p
+GROUP BY p.year, p.month
+ORDER BY p.year DESC, p.month DESC;
+
+-- 6.9 Payslips for one employee across months
+SELECT p.month, p.year, p."grossSalary", p."netSalary", p.status,
+       p."generatedAt", p."sentAt"
+FROM "Payslip" p
+WHERE p."employeeId" = 'PASTE_EMPLOYEE_UUID_HERE'
+ORDER BY p.year DESC, p.month DESC;
+
+-- 6.10 Generated payslips (PDF) with download count
+SELECT e."employeeCode", e."employeeName", gp.month, gp.year,
+       gp."pdfPath", gp."pdfSize", gp."generatedAt",
+       gp."downloadCount", gp."lastDownloadAt"
+FROM "GeneratedPayslip" gp
+JOIN "Employee" e ON e.id = gp."employeeId"
+ORDER BY gp."generatedAt" DESC;
+
+-- 6.11 Most downloaded payslips
+SELECT e."employeeName", gp.month, gp.year, gp."downloadCount",
+       gp."lastDownloadAt"
+FROM "GeneratedPayslip" gp
+JOIN "Employee" e ON e.id = gp."employeeId"
+ORDER BY gp."downloadCount" DESC
+LIMIT 10;
+
+--------------------------------------------------------------------------------
+SECTION 7 : UPLOADS / PARSED SALARY DATA
+--------------------------------------------------------------------------------
+
+-- 7.1 All uploaded files
+SELECT id, "fileName", "fileType", "fileSize", "recordCount", status,
+       month, year, "uploadedAt"
+FROM "UploadedFile"
+ORDER BY "uploadedAt" DESC;
+
+-- 7.2 Uploaded files for a specific month/year
+SELECT "fileName", "recordCount", status, "uploadedAt"
+FROM "UploadedFile"
+WHERE month = 7 AND year = 2026
+ORDER BY "uploadedAt" DESC;
+
+-- 7.3 Parsed salary rows for an upload
+SELECT pd."employeeCode", pd."employeeName", pd."basicSalary", pd.hra,
+       pd.da, pd.bonus, pd.incentive, pd."netSalary", pd.workingDays,
+       pd.leaves, pd.lop, pd."monthlySalary", pd.gross, pd.status,
+       pd."isValid", pd."validationErrors"
+FROM "ParsedSalaryData" pd
+WHERE pd."uploadedFileId" = 'PASTE_UPLOAD_UUID_HERE'
+ORDER BY pd."employeeName";
+
+-- 7.4 All parsed salary rows with upload file names
+SELECT u."fileName", pd."employeeCode", pd."employeeName", pd.month, pd.year,
+       pd."netSalary", pd.status, pd."isValid", pd."validationErrors"
+FROM "ParsedSalaryData" pd
+JOIN "UploadedFile" u ON u.id = pd."uploadedFileId"
+ORDER BY pd."createdAt" DESC;
+
+-- 7.5 Invalid / failed parsed rows
+SELECT u."fileName", pd."employeeName", pd."validationErrors"
+FROM "ParsedSalaryData" pd
+JOIN "UploadedFile" u ON u.id = pd."uploadedFileId"
+WHERE pd."isValid" = false
+   OR pd.status <> 'SAVED';
+
+--------------------------------------------------------------------------------
+SECTION 8 : EMAIL LOGS
+--------------------------------------------------------------------------------
+
+-- 8.1 All email logs
+SELECT el.id, e."employeeName", el."emailType", el."recipientEmail",
+       el.subject, el.status, el."errorMessage", el."sentAt", el."createdAt"
+FROM "EmailLog" el
+LEFT JOIN "Employee" e ON e.id = el."employeeId"
+ORDER BY el."createdAt" DESC;
+
+-- 8.2 Emails by status
+SELECT status, COUNT(*) AS total
+FROM "EmailLog"
+GROUP BY status;
+
+-- 8.3 Failed emails with error reason
+SELECT e."employeeName", el."recipientEmail", el.subject, el.status,
+       el."errorMessage", el."createdAt"
+FROM "EmailLog" el
+LEFT JOIN "Employee" e ON e.id = el."employeeId"
+WHERE el.status = 'FAILED'
+ORDER BY el."createdAt" DESC;
+
+-- 8.4 Emails sent to one employee
+SELECT el."emailType", el."recipientEmail", el.subject, el.status,
+       el."sentAt"
+FROM "EmailLog" el
+WHERE el."recipientEmail" = 'employee@example.com'
+ORDER BY el."sentAt" DESC;
+
+-- 8.5 Email logs for a specific payslip
+SELECT el."recipientEmail", el.status, el."errorMessage", el."sentAt"
+FROM "EmailLog" el
+WHERE el."payslipId" = 'PASTE_PAYSLIP_UUID_HERE';
+
+--------------------------------------------------------------------------------
+SECTION 9 : SETTINGS (COMPANY, SMTP, APP SETTINGS)
+--------------------------------------------------------------------------------
+
+-- 9.1 Company profile
+SELECT "companyName", "nameLine2", tagline, address, logo,
+       "gstNumber", "panNumber", "phoneNumber", email, website,
+       "authorizedSignatory", "footerText", "updatedAt"
+FROM "CompanyProfile";
+
+-- 9.2 SMTP configuration (password is shown only as hashed/length - do not expose)
+SELECT id, host, port, username, "senderName", "senderEmail", encryption,
+       "isDefault", "isActive", "lastTestAt", "testStatus", "testMessage"
+FROM "SMTPConfig";
+
+-- 9.3 SMTP test status history
+SELECT "lastTestAt", "testStatus", "testMessage"
+FROM "SMTPConfig"
+WHERE "testStatus" IS NOT NULL
+ORDER BY "lastTestAt" DESC;
+
+-- 9.4 All application settings
+SELECT key, value, category, description, "isEditable", "updatedAt"
+FROM "Setting"
+ORDER BY category, key;
+
+-- 9.5 App settings filtered by category
+SELECT key, value, description
+FROM "Setting"
+WHERE category = 'general';
+
+--------------------------------------------------------------------------------
+SECTION 10 : DEPARTMENTS & DESIGNATIONS
+--------------------------------------------------------------------------------
+
+-- 10.1 All departments
+SELECT id, name, code, description, head, "isActive", "createdAt"
+FROM "Department"
+ORDER BY name;
+
+-- 10.2 All designations with their department
+SELECT d.name AS designation, d.code AS designation_code,
+       dept.name AS department, dept.code AS department_code,
+       d."isActive"
+FROM "Designation" d
+JOIN "Department" dept ON dept.id = d."departmentId"
+ORDER BY dept.name, d.name;
+
+-- 10.3 Designations per department (count)
+SELECT dept.name AS department, COUNT(d.id) AS designations
+FROM "Department" dept
+LEFT JOIN "Designation" d ON d."departmentId" = dept.id
+GROUP BY dept.name
+ORDER BY department;
+
+-- 10.4 Employees mapped to departments and designations
+SELECT e."employeeCode", e."employeeName", e.department, e.designation
+FROM "Employee" e
+ORDER BY e.department, e.designation, e."employeeName";
+
+--------------------------------------------------------------------------------
+SECTION 11 : SALARY HISTORY
+--------------------------------------------------------------------------------
+
+-- 11.1 Salary history for all employees
+SELECT e."employeeCode", e."employeeName", sh.month, sh.year,
+       sh."basicSalary", sh.hra, sh.da, sh."grossSalary", sh."netSalary",
+       sh."createdAt"
+FROM "SalaryHistory" sh
+JOIN "Employee" e ON e.id = sh."employeeId"
+ORDER BY e."employeeName", sh.year DESC, sh.month DESC;
+
+-- 11.2 Salary history for one employee
+SELECT sh.month, sh.year, sh."basicSalary", sh.hra, sh.da,
+       sh."grossSalary", sh."netSalary"
+FROM "SalaryHistory" sh
+WHERE sh."employeeId" = 'PASTE_EMPLOYEE_UUID_HERE'
+ORDER BY sh.year, sh.month;
+
+-- 11.3 Latest salary of each employee (from salary history)
+SELECT DISTINCT ON (e."employeeName")
+       e."employeeCode", e."employeeName", sh."basicSalary", sh."netSalary",
+       sh.month, sh.year
+FROM "SalaryHistory" sh
+JOIN "Employee" e ON e.id = sh."employeeId"
+ORDER BY e."employeeName", sh.year DESC, sh.month DESC;
+
+--------------------------------------------------------------------------------
+SECTION 12 : AUDIT LOGS
+--------------------------------------------------------------------------------
+
+-- 12.1 All audit log entries (recent first)
+SELECT al.id, a.email AS admin_email, al.action, al."entityType",
+       al."entityId", al."ipAddress", al."userAgent", al.timestamp
+FROM "AuditLog" al
+JOIN "Admin" a ON a.id = al."adminId"
+ORDER BY al.timestamp DESC;
+
+-- 12.2 Audit log summary (action wise)
+SELECT action, "entityType", COUNT(*) AS total
+FROM "AuditLog"
+GROUP BY action, "entityType"
+ORDER BY total DESC;
+
+-- 12.3 Audit logs for a specific action
+SELECT a.email AS admin_email, al.action, al."entityType", al.timestamp
+FROM "AuditLog" al
+JOIN "Admin" a ON a.id = al."adminId"
+WHERE al.action = 'CREATE'
+ORDER BY al.timestamp DESC;
+
+-- 12.4 Audit logs for a specific entity type
+SELECT a.email AS admin_email, al.action, al."entityId", al.timestamp
+FROM "AuditLog" al
+JOIN "Admin" a ON a.id = al."adminId"
+WHERE al."entityType" = 'Employee'
+ORDER BY al.timestamp DESC;
+
+-- 12.5 Audit logs on a specific date
+SELECT a.email AS admin_email, al.action, al."entityType", al.timestamp
+FROM "AuditLog" al
+JOIN "Admin" a ON a.id = al."adminId"
+WHERE al.timestamp::date = '2026-07-31'
+ORDER BY al.timestamp DESC;
+
+-- 12.6 Audit logs details (JSON) for a specific entry
+SELECT al.action, al."entityType", al.details, al.timestamp
+FROM "AuditLog" al
+WHERE al.id = 'PASTE_AUDIT_UUID_HERE';
+
+--------------------------------------------------------------------------------
+SECTION 13 : JIBBLE SYNC HISTORY
+--------------------------------------------------------------------------------
+
+-- 13.1 All Jibble sync runs
+SELECT id, "syncType", "startDate", "endDate", "recordsSynced",
+       "recordsFailed", status, "errorMessage", "syncStartAt", "syncEndAt"
+FROM "JibbleSyncHistory"
+ORDER BY "syncStartAt" DESC;
+
+-- 13.2 Jibble syncs by status
+SELECT status, COUNT(*) AS total
+FROM "JibbleSyncHistory"
+GROUP BY status;
+
+-- 13.3 Failed Jibble syncs
+SELECT "syncType", "startDate", "endDate", "recordsFailed",
+       "errorMessage", "syncStartAt"
+FROM "JibbleSyncHistory"
+WHERE status = 'FAILED' OR "recordsFailed" > 0
+ORDER BY "syncStartAt" DESC;
+
+-- 13.4 Latest Jibble sync summary
+SELECT "syncType", "recordsSynced", "recordsFailed", status, "syncStartAt",
+       "syncEndAt"
+FROM "JibbleSyncHistory"
+ORDER BY "syncStartAt" DESC
+LIMIT 5;
+
+--------------------------------------------------------------------------------
+SECTION 14 : ADVANCED / REPORTING QUERIES
+--------------------------------------------------------------------------------
+
+-- 14.1 Month-wise payroll comparison
+SELECT p.year, p.month,
+       COUNT(*) AS employees_paid,
+       ROUND(SUM(p."grossSalary")::numeric, 2) AS total_gross,
+       ROUND(SUM(p."netSalary")::numeric, 2)   AS total_net,
+       ROUND(AVG(p."netSalary")::numeric, 2)   AS average_net
+FROM "Payslip" p
+GROUP BY p.year, p.month
+ORDER BY p.year, p.month;
+
+-- 14.2 Department-wise payroll for a month
+SELECT e.department,
+       COUNT(*) AS employees,
+       ROUND(SUM(p."netSalary")::numeric, 2) AS total_net_pay
+FROM "Payslip" p
+JOIN "Employee" e ON e.id = p."employeeId"
+WHERE p.month = 7 AND p.year = 2026
+GROUP BY e.department
+ORDER BY total_net_pay DESC;
+
+-- 14.3 Employees without a payslip for a specific month
+SELECT e."employeeCode", e."employeeName", e.department
+FROM "Employee" e
+WHERE e."employmentStatus" = 'Active'
+  AND NOT EXISTS (
+    SELECT 1 FROM "Payslip" p
+    WHERE p."employeeId" = e.id AND p.month = 7 AND p.year = 2026
+  )
+ORDER BY e."employeeName";
+
+-- 14.4 Employees with salary mismatch (employee table vs payslip)
+SELECT e."employeeCode", e."employeeName",
+       e."basicSalary" AS emp_basic, p."basicSalary" AS payslip_basic,
+       e."netSalary"   AS emp_net,   p."netSalary"   AS payslip_net
+FROM "Employee" e
+JOIN "Payslip" p ON p."employeeId" = e.id AND p.month = 7 AND p.year = 2026
+WHERE ABS(e."basicSalary" - p."basicSalary") > 0.01
+   OR ABS(e."netSalary" - p."netSalary") > 0.01
+ORDER BY e."employeeName";
+
+-- 14.5 Full employee-payslip-attendance report for one month
+SELECT e."employeeCode", e."employeeName", e.department, e.designation,
+       s."presentDays", s."absentDays", s."lopDays", s."payableDays",
+       p."grossSalary", p."totalDeductions", p."netSalary", p.status
+FROM "Employee" e
+LEFT JOIN "AttendanceSummary" s
+       ON s."employeeId" = e.id AND s.month = 7 AND s.year = 2026
+LEFT JOIN "Payslip" p
+       ON p."employeeId" = e.id AND p.month = 7 AND p.year = 2026
+ORDER BY e."employeeName";
+
+-- 14.6 Data verification: upload vs saved payslips
+SELECT u."fileName",
+       u."recordCount" AS records_in_file,
+       COUNT(DISTINCT pd."employeeCode") AS parsed_employees,
+       COUNT(DISTINCT p."employeeId")    AS payslips_created
+FROM "UploadedFile" u
+LEFT JOIN "ParsedSalaryData" pd ON pd."uploadedFileId" = u.id
+LEFT JOIN "Payslip" p ON p.year = u.year AND p.month = u.month
+GROUP BY u.id, u."fileName", u."recordCount"
+ORDER BY u."uploadedAt" DESC;
+
+-- 14.7 Employees never synced with Jibble
+SELECT "employeeCode", "employeeName", "syncStatus"
+FROM "Employee"
+WHERE "jibbleEmployeeId" IS NULL
+   OR "syncStatus" = 'PENDING'
+ORDER BY "employeeName";
+
+--------------------------------------------------------------------------------
+SECTION 15 : HOUSEKEEPING / DIAGNOSTIC QUERIES (READ ONLY)
+--------------------------------------------------------------------------------
+
+-- 15.1 Duplicate employee codes (should return 0 rows)
+SELECT "employeeCode", COUNT(*) AS duplicates
+FROM "Employee"
+GROUP BY "employeeCode"
+HAVING COUNT(*) > 1;
+
+-- 15.2 Duplicate aadhar numbers (should return 0 rows)
+SELECT "aadharNumber", COUNT(*) AS duplicates
+FROM "Employee"
+GROUP BY "aadharNumber"
+HAVING COUNT(*) > 1;
+
+-- 15.3 Duplicate payslips (same employee + month + year) (should return 0 rows)
+SELECT "employeeId", month, year, COUNT(*) AS duplicates
+FROM "Payslip"
+GROUP BY "employeeId", month, year
+HAVING COUNT(*) > 1;
+
+-- 15.4 Duplicate attendance (same employee + date) (should return 0 rows)
+SELECT "employeeId", date, COUNT(*) AS duplicates
+FROM "Attendance"
+GROUP BY "employeeId", date
+HAVING COUNT(*) > 1;
+
+-- 15.5 Payslips with negative net salary (sanity check)
+SELECT e."employeeCode", e."employeeName", p.month, p.year, p."netSalary"
+FROM "Payslip" p
+JOIN "Employee" e ON e.id = p."employeeId"
+WHERE p."netSalary" < 0
+ORDER BY p."netSalary";
+
+-- 15.6 Employees with missing mandatory fields (sanity check)
+SELECT "employeeCode", "employeeName",
+       CASE WHEN email IS NULL OR email = '' THEN 'MISSING email' END,
+       CASE WHEN "panNumber" IS NULL OR "panNumber" = '' THEN 'MISSING pan' END,
+       CASE WHEN "aadharNumber" IS NULL OR "aadharNumber" = '' THEN 'MISSING aadhar' END,
+       CASE WHEN "bankAccountNumber" IS NULL OR "bankAccountNumber" = '' THEN 'MISSING bank' END
+FROM "Employee"
+WHERE email = '' OR "panNumber" = '' OR "aadharNumber" = ''
+   OR "bankAccountNumber" = ''
+ORDER BY "employeeName";
+
+-- 15.7 Orphan records check: attendance/payslip pointing to deleted employee
+SELECT 'Attendance' AS orphan_type, COUNT(*) AS count
+FROM "Attendance" a
+LEFT JOIN "Employee" e ON e.id = a."employeeId"
+WHERE e.id IS NULL
+UNION ALL
+SELECT 'Payslip', COUNT(*)
+FROM "Payslip" p
+LEFT JOIN "Employee" e ON e.id = p."employeeId"
+WHERE e.id IS NULL;
+
+-- 15.8 Recent activity across the whole system (last 7 days)
+SELECT 'Employee created' AS event, "createdAt" AS occurred_at, "employeeName" AS detail
+FROM "Employee" WHERE "createdAt" >= CURRENT_DATE - INTERVAL '7 days'
+UNION ALL
+SELECT 'Payslip generated', p."generatedAt", e."employeeName"
+FROM "Payslip" p JOIN "Employee" e ON e.id = p."employeeId"
+WHERE p."generatedAt" >= CURRENT_DATE - INTERVAL '7 days'
+UNION ALL
+SELECT 'Email sent', el."sentAt", el."recipientEmail"
+FROM "EmailLog" el WHERE el."sentAt" >= CURRENT_DATE - INTERVAL '7 days'
+UNION ALL
+SELECT 'File uploaded', u."uploadedAt", u."fileName"
+FROM "UploadedFile" u WHERE u."uploadedAt" >= CURRENT_DATE - INTERVAL '7 days'
+ORDER BY occurred_at DESC;
+
+--------------------------------------------------------------------------------
+END OF QUERY FILE
+================================================================================
