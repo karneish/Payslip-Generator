@@ -740,7 +740,53 @@ function buildPayslipHtml(payslip: any, employee: any, companyProfile: any): str
 </html>`;
 }
 
+const JIBBLE_OUTPUT_DIR = path.join(__dirname, '../../uploads/jibble-payslips/');
+
 export class PdfService {
+  static async generatePayslipFromData(
+    payslip: any,
+    employee: any,
+    companyProfile: any,
+    outputDir: string = JIBBLE_OUTPUT_DIR
+  ): Promise<{ filePath: string; fileSize: number }> {
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+
+    const safeName = employee.employeeName.replace(/[^a-zA-Z0-9]/g, '');
+    const monthName = MONTHS_SHORT[payslip.month - 1];
+    const fileName = `${safeName}_${monthName}_${payslip.year}.pdf`;
+    const filePath = path.join(outputDir, fileName);
+
+    const htmlContent = buildPayslipHtml(payslip, employee, companyProfile);
+
+    const { default: puppeteer } = await import('puppeteer');
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
+
+    try {
+      const page = await browser.newPage();
+      await page.setContent(htmlContent, { waitUntil: 'load' });
+
+      await page.pdf({
+        path: filePath,
+        format: 'A4',
+        printBackground: true,
+        margin: { top: '0', right: '0', bottom: '0', left: '0' },
+      });
+
+      await page.close();
+
+      const stats = fs.statSync(filePath);
+      logger.info(`Jibble payslip PDF generated: ${filePath} (${stats.size} bytes)`);
+      return { filePath, fileSize: stats.size };
+    } finally {
+      await browser.close();
+    }
+  }
+
   static async generatePayslip(payslipId: string): Promise<{ filePath: string; fileSize: number }> {
     const payslip = await prisma.payslip.findUnique({
       where: { id: payslipId },
