@@ -66,6 +66,7 @@ model Employee {
   attendance        Attendance[]
   attendanceSummary AttendanceSummary[]
   payslips          Payslip[]
+  jibblePayslips    JibblePayslip[]
   generatedPayslips GeneratedPayslip[]
   emailLogs         EmailLog[]
   salaryHistory     SalaryHistory[]
@@ -179,6 +180,69 @@ model Payslip {
   generatedPayslip  GeneratedPayslip?
   emailLogs         EmailLog[]
   
+  @@unique([employeeId, month, year])
+}
+
+model JibblePayslip {
+  id                String    @id @default(uuid())
+  employeeId        String
+  month             Int
+  year              Int
+
+  // Attendance (computed from Jibble hours: >= 8h work = 1 present day)
+  totalDays         Int       @default(0)
+  workingDays       Int       @default(0)
+  presentDays       Int       @default(0)
+  halfDays          Int       @default(0)
+  absentDays        Int       @default(0)
+  leaveDays         Int       @default(0)
+  holidayDays       Int       @default(0)
+  weekendDays       Int       @default(0)
+  lopDays           Int       @default(0)
+  payableDays       Float     @default(0)
+  totalWorkedHours  Float     @default(0)
+  totalOvertimeHours Float    @default(0)
+
+  // Salary Components
+  basicSalary       Float     @default(0)
+  hra               Float     @default(0)
+  da                Float     @default(0)
+  medicalAllowance  Float     @default(0)
+  travelAllowance   Float     @default(0)
+  specialAllowance  Float     @default(0)
+  otherAllowances   Float     @default(0)
+  bonus             Float     @default(0)
+  incentive         Float     @default(0)
+  overtimePay       Float     @default(0)
+  totalEarnings     Float     @default(0)
+
+  // Deductions
+  pfDeduction       Float     @default(0)
+  esiDeduction      Float     @default(0)
+  professionalTax   Float     @default(0)
+  incomeTax         Float     @default(0)
+  leaveDeduction    Float     @default(0)
+  lateDeduction     Float     @default(0)
+  otherDeductions   Float     @default(0)
+  advanceDeduction  Float     @default(0)
+  totalDeductions   Float     @default(0)
+
+  grossSalary       Float     @default(0)
+  netSalary         Float     @default(0)
+  amountInWords     String?
+
+  status            String    @default("DRAFT")
+  pdfPath           String?
+  pdfSize           Int?
+
+  generatedAt       DateTime?
+  generatedBy       String?
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  employee          Employee  @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+
   @@unique([employeeId, month, year])
 }
 
