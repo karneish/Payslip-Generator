@@ -22,6 +22,7 @@ const navItems = [
   { href: '/upload', label: 'Upload Salary', icon: Upload },
   { href: '/payslips', label: 'Payslips', icon: FileText },
   { href: '/attendance', label: 'Attendance', icon: Clock },
+  { href: '/jibble-payslips', label: 'Jibble Payslip', icon: FileText },
 ];
 
 interface SidebarProps {
