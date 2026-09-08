@@ -7,7 +7,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import api from '@/lib/axios';
@@ -28,9 +27,7 @@ export default function PayslipsPage() {
   const [loading, setLoading] = useState(true);
   const [showReview, setShowReview] = useState(false);
   const [selectedPayslip, setSelectedPayslip] = useState<any>(null);
-  const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
-  const [emailSending, setEmailSending] = useState(false);
 
   const fetchPayslips = useCallback(async () => {
     setLoading(true);
@@ -72,6 +69,10 @@ export default function PayslipsPage() {
   };
 
   const handleDownload = async (payslip: any) => {
+    await downloadPdf(payslip);
+  };
+
+  const downloadPdf = async (payslip: any) => {
     try {
       const { data } = await api.get(`/payslips/${payslip.id}/download`, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([data]));
@@ -83,22 +84,39 @@ export default function PayslipsPage() {
       document.body.appendChild(link);
       link.click();
       link.remove();
+      return true;
     } catch {
-      toast.error('Download failed');
+      toast.error('Failed to download PDF');
+      return false;
     }
   };
 
-  const handleSendEmail = async () => {
-    if (!selectedPayslip) return;
-    setEmailSending(true);
-    try {
-      await api.post(`/payslips/${selectedPayslip.id}/send-email`);
-      toast.success('Email sent successfully');
-      setShowEmailDialog(false);
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Email failed');
-    } finally {
-      setEmailSending(false);
+  const handleGmailSend = async (payslip: any) => {
+    const employeeEmail = payslip.employee?.email;
+    if (!employeeEmail) {
+      toast.error('Employee has no email address');
+      return;
+    }
+
+    const monthName = MONTHS[(payslip.month || 1) - 1];
+    const year = payslip.year || new Date().getFullYear();
+    const netSalary = payslip.netSalary || 0;
+    const empName = payslip.employee?.employeeName || 'Employee';
+
+    const subject = encodeURIComponent(`Payslip for ${monthName} ${year}`);
+    const body = encodeURIComponent(
+      `Dear ${empName},\n\n` +
+      `Please find attached your payslip for ${monthName} ${year}.\n\n` +
+      `Net Salary: \u20B9${netSalary.toLocaleString('en-IN')}\n\n` +
+      `Best regards,\nHR`
+    );
+
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(employeeEmail)}&su=${subject}&body=${body}`;
+    window.open(gmailUrl, '_blank');
+
+    const downloaded = await downloadPdf(payslip);
+    if (downloaded) {
+      toast.success('Gmail opened \u2014 drag the downloaded PDF into the compose window to attach it.');
     }
   };
 
@@ -158,7 +176,7 @@ export default function PayslipsPage() {
                   <FileText className="w-4 h-4 mr-2" /> Generate PDF
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem onClick={() => { setSelectedPayslip(p); setShowEmailDialog(true); }} className="text-gray-300 hover:bg-gray-700">
+              <DropdownMenuItem onClick={() => handleGmailSend(p)} className="text-gray-300 hover:bg-gray-700">
                 <Send className="w-4 h-4 mr-2" /> Send Email
               </DropdownMenuItem>
               <DropdownMenuItem className="text-red-400 hover:bg-red-900/30" onClick={() => handleDelete(p.id)}>
@@ -249,23 +267,6 @@ export default function PayslipsPage() {
           />
         )}
       </AnimatePresence>
-
-      <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
-        <DialogContent className="bg-gray-900 border-gray-700">
-          <DialogHeader>
-            <DialogTitle className="text-gray-100">Send Payslip via Email</DialogTitle>
-          </DialogHeader>
-          <p className="text-gray-400">
-            Send the payslip for <strong className="text-gray-200">{selectedPayslip?.employee?.employeeName}</strong> ({MONTHS[(selectedPayslip?.month || 1) - 1]} {selectedPayslip?.year}) to their email?
-          </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEmailDialog(false)} className="border-gray-700 text-gray-300">Cancel</Button>
-            <Button onClick={handleSendEmail} disabled={emailSending} className="bg-gradient-to-r from-blue-600 to-blue-500">
-              {emailSending ? 'Sending...' : 'Send Email'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </motion.div>
   );
 }
