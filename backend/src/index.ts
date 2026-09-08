@@ -23,6 +23,7 @@ import { settingsRoutes } from './routes/settings.routes';
 import { auditRoutes } from './routes/audit.routes';
 import { emailRoutes } from './routes/email.routes';
 import { jibbleRoutes } from './services/jibble/jibble.routes';
+import { jibblePayslipRoutes } from './services/jibble-payslip.routes';
 import { errorMiddleware } from './middlewares/error.middleware';
 import { loggingMiddleware } from './middlewares/logging.middleware';
 import { authMiddleware } from './middlewares/auth.middleware';
@@ -70,6 +71,7 @@ app.use('/api/settings', authMiddleware, settingsRoutes);
 app.use('/api/audit', authMiddleware, auditRoutes);
 app.use('/api/email-logs', authMiddleware, emailRoutes);
 app.use('/api/jibble', authMiddleware, jibbleRoutes);
+app.use('/api/jibble-payslips', authMiddleware, jibblePayslipRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
