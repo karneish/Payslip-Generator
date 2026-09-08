@@ -8,13 +8,14 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { useUpdatePayslip, useCreatePayslip } from '@/hooks/use-payslips';
 import { MONTHS, PAYSLIP_STATUSES } from '@/lib/constants';
+import api from '@/lib/axios';
 
 interface PayslipFormProps {
   payslip?: any;
   employeeId?: string;
   employeeName?: string;
+  basePath?: string;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -37,11 +38,9 @@ function numField(label: string, value: number, onChange: (v: number) => void, o
   );
 }
 
-export function PayslipForm({ payslip, employeeId, employeeName, onClose, onSuccess }: PayslipFormProps) {
+export function PayslipForm({ payslip, employeeId, employeeName, basePath = '/payslips', onClose, onSuccess }: PayslipFormProps) {
   const isEditing = !!payslip;
   const [loading, setLoading] = useState(false);
-  const updatePayslip = useUpdatePayslip();
-  const createPayslip = useCreatePayslip();
 
   const [form, setForm] = useState({
     month: 1,
@@ -49,6 +48,7 @@ export function PayslipForm({ payslip, employeeId, employeeName, onClose, onSucc
     totalDays: 0,
     workingDays: 0,
     presentDays: 0,
+    halfDays: 0,
     absentDays: 0,
     leaveDays: 0,
     holidayDays: 0,
@@ -84,6 +84,7 @@ export function PayslipForm({ payslip, employeeId, employeeName, onClose, onSucc
         totalDays: payslip.totalDays || 0,
         workingDays: payslip.workingDays || 0,
         presentDays: payslip.presentDays || 0,
+        halfDays: payslip.halfDays || 0,
         absentDays: payslip.absentDays || 0,
         leaveDays: payslip.leaveDays || 0,
         holidayDays: payslip.holidayDays || 0,
@@ -127,10 +128,10 @@ export function PayslipForm({ payslip, employeeId, employeeName, onClose, onSucc
     setLoading(true);
     try {
       if (isEditing) {
-        await updatePayslip.mutateAsync({ id: payslip.id, ...form });
+        await api.put(`${basePath}/${payslip.id}`, { ...form });
         toast.success('Payslip updated successfully');
       } else {
-        await createPayslip.mutateAsync({ employeeId, ...form });
+        await api.post(basePath, { employeeId, ...form });
         toast.success('Payslip created successfully');
       }
       onSuccess();
@@ -187,6 +188,7 @@ export function PayslipForm({ payslip, employeeId, employeeName, onClose, onSucc
             {numField('Total Days', form.totalDays, v => handleChange('totalDays', v))}
             {numField('Working Days', form.workingDays, v => handleChange('workingDays', v))}
             {numField('Present Days', form.presentDays, v => handleChange('presentDays', v))}
+            {numField('Half Days', form.halfDays, v => handleChange('halfDays', v))}
             {numField('Absent Days', form.absentDays, v => handleChange('absentDays', v))}
             {numField('Leave Days', form.leaveDays, v => handleChange('leaveDays', v))}
             {numField('Holiday Days', form.holidayDays, v => handleChange('holidayDays', v))}
